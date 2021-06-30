@@ -7,6 +7,5 @@
 
     public interface IDataAccess
     {
-        IEnumerable<TData> GetData<TData>();
     }
 }

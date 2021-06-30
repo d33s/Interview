@@ -4,52 +4,69 @@
     using System.IO;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Web;
     using Newtonsoft.Json;
+    using Interview.DataAccessLayer.Models;
 
     public class JsonDataAccess : IDataAccess
     {
-        internal IList<Transaction> Transactions { get; set; }
+        private readonly string _configPath;
 
-        private string _configPath = $@"{Directory.GetCurrentDirectory()}" + "\\..\\" + "appsettings.json";
-        public IEnumerable<TData> GetData<TData>()
+        private IList<Transaction> _transactions { get; set; }
+
+        public JsonDataAccess()
         {
+            _configPath = $@"{AppDomain.CurrentDomain.BaseDirectory}" + "..\\" + "data.json";
             var jsonText = File.ReadAllText(_configPath);
-            return JsonConvert.DeserializeObject<IEnumerable<Account>>(jsonText);
+            _transactions = JsonConvert.DeserializeObject<List<Transaction>>(jsonText);
         }
 
-        public IEnumerable<Transaction> GetAll<TData>()
+        public IEnumerable<Transaction> GetAll()
         {
-            return Transactions;
+            return _transactions;
         }        
 
-        public Transaction GetRecord<Transaction>(Guid id)
+        public Transaction GetRecord(Guid id)
         {
-            return Transactions.SingleOrDefault(t => t.Id == id);
+            return _transactions.SingleOrDefault(t => t.Id == id);
         }
 
-        public Transaction AddRecord<Transaction>(Transaction transaction)
+        public void AddRecord(Transaction transaction)
         {
-            Transactions.Add(transaction);
+            _transactions.Add(transaction);
+
+            UpdateFile();
         }
 
-        public void DeleteRecord<Transaction>(Guid guid)
+        public void DeleteRecord(Guid id)
         {
-            var transactionToRemove = Transactions.SingleOrDefault(t => t.Id == guid);
-
+            var transactionToRemove = _transactions.SingleOrDefault(t => t.Id == id);
             if (transactionToRemove != null)
             {
-                Transactions.Remove(transactionToRemove);
+                _transactions.Remove(transactionToRemove);
             }
+
+            UpdateFile();
         }
 
-        public IEnumerable<Transaction> UpdateRecord<TData>(Transaction transaction)
+        public void UpdateRecord(Guid id, Transaction transaction)
         {
-            var transactionToUpdate = Transactions.SingleOrDefault(t => t.Id == transaction.Id);
+            var transactionToUpdate = _transactions.SingleOrDefault(t => t.Id == id);
             if (transactionToUpdate != null)
             {
                 transactionToUpdate = transaction;
             }
+
+            UpdateFile();
+        }
+
+        private void UpdateFile()
+        {
+            File.WriteAllText(_configPath,
+                JsonConvert.SerializeObject(
+                    _transactions,
+                    typeof(Transaction[]),
+                    Formatting.Indented,
+                    new JsonSerializerSettings()));
         }
     }
 }
